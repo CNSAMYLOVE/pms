@@ -137,13 +137,18 @@ echo -e "${GREEN}验证Python版本...${NC}"
 python --version
 
 # 确保所有依赖都安装（environment.yml应该已经安装了，这里作为补充）
-echo -e "${GREEN}安装/更新pip依赖包...${NC}"
+# 注意：environment.yml已经安装了所有依赖，这里只是确保没有遗漏的包
+echo -e "${GREEN}安装/更新pip依赖包（可选，environment.yml已安装所有依赖）...${NC}"
 if [ -f "$PROJECT_DIR/requirements.txt" ]; then
     echo -e "${GREEN}使用根目录 requirements.txt 安装依赖...${NC}"
-    pip install -r "$PROJECT_DIR/requirements.txt" -i https://pypi.tuna.tsinghua.edu.cn/simple
+    pip install -r "$PROJECT_DIR/requirements.txt" -i https://pypi.tuna.tsinghua.edu.cn/simple || {
+        echo -e "${YELLOW}警告: requirements.txt安装失败，但依赖已通过environment.yml安装，继续执行...${NC}"
+    }
 elif [ -f "$PROJECT_DIR/client/requirements.txt" ]; then
     echo -e "${GREEN}使用 client/requirements.txt 安装依赖...${NC}"
-    pip install -r "$PROJECT_DIR/client/requirements.txt" -i https://pypi.tuna.tsinghua.edu.cn/simple
+    pip install -r "$PROJECT_DIR/client/requirements.txt" -i https://pypi.tuna.tsinghua.edu.cn/simple || {
+        echo -e "${YELLOW}警告: requirements.txt安装失败，但依赖已通过environment.yml安装，继续执行...${NC}"
+    }
 else
     echo -e "${YELLOW}未找到requirements.txt，跳过pip安装（依赖已通过environment.yml安装）${NC}"
 fi
