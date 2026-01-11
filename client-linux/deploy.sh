@@ -12,7 +12,7 @@ NC='\033[0m' # No Color
 
 # 配置变量
 GITHUB_REPO="https://github.com/CNSAMYLOVE/pms.git"
-GIT_COMMIT="947a3942804b3080b274d9375d3458fe2ca1bb9b"
+GIT_BRANCH="main"  # 使用main分支（最新代码）
 INSTALL_DIR="${1:-/opt/pms_client}"
 CLIENT_ID="${2:-client-1}"
 SERVER_URL="http://101.32.22.185:8000"
@@ -94,28 +94,24 @@ if [ -d "pm" ]; then
     echo -e "${YELLOW}检测到现有代码，更新中...${NC}"
     cd pm
     git fetch origin
-    # 尝试checkout指定的commit，如果不存在则使用main分支
-    if git rev-parse --verify $GIT_COMMIT >/dev/null 2>&1; then
-        git checkout $GIT_COMMIT
-    else
-        echo -e "${YELLOW}指定的commit不存在，使用main分支${NC}"
-        git checkout main 2>/dev/null || git checkout master 2>/dev/null || git checkout $(git branch -r | head -n1 | sed 's/origin\///' | tr -d ' ')
-    fi
+    # 切换到main分支（如果不存在则使用master）
+    git checkout $GIT_BRANCH 2>/dev/null || git checkout master 2>/dev/null || {
+        echo -e "${YELLOW}main/master分支不存在，使用默认分支${NC}"
+        git checkout $(git branch -r | head -n1 | sed 's/origin\///' | tr -d ' ')
+    }
+    git pull origin $GIT_BRANCH 2>/dev/null || git pull origin master 2>/dev/null || echo -e "${GREEN}代码已更新${NC}"
     cd ..
 else
     echo -e "${GREEN}克隆代码仓库...${NC}"
-    git clone $GITHUB_REPO pm
-    cd pm
-    # 尝试checkout指定的commit，如果不存在则使用main分支
-    if git rev-parse --verify $GIT_COMMIT >/dev/null 2>&1; then
-        git checkout $GIT_COMMIT
-    else
-        echo -e "${YELLOW}指定的commit不存在，使用main分支${NC}"
+    git clone -b $GIT_BRANCH $GITHUB_REPO pm 2>/dev/null || {
+        echo -e "${YELLOW}main分支不存在，使用默认分支${NC}"
+        git clone $GITHUB_REPO pm
+        cd pm
         git checkout main 2>/dev/null || git checkout master 2>/dev/null || echo -e "${GREEN}已使用默认分支${NC}"
-    fi
-    cd ..
+        cd ..
+    }
 fi
-echo -e "${GREEN}代码就绪${NC}"
+echo -e "${GREEN}代码就绪（使用最新代码）${NC}"
 echo ""
 
 # 步骤4: 创建Conda环境
