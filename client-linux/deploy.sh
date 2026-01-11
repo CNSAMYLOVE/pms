@@ -40,21 +40,58 @@ if ! command -v conda &> /dev/null; then
     
     # 检测系统架构
     ARCH=$(uname -m)
-    if [ "$ARCH" = "x86_64" ]; then
-        MINICONDA_URL="https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh"
-    else
+    if [ "$ARCH" != "x86_64" ]; then
         echo -e "${RED}不支持的架构: $ARCH${NC}"
         exit 1
     fi
     
+    # 检测GLIBC版本
+    GLIBC_VERSION=$(ldd --version 2>&1 | head -n1 | grep -oE '[0-9]+\.[0-9]+' | head -n1)
+    echo -e "${GREEN}检测到GLIBC版本: ${GLIBC_VERSION}${NC}"
+    
+    # 根据GLIBC版本选择Miniconda版本
+    if [ -n "$GLIBC_VERSION" ]; then
+        # 使用bc或者awk来比较版本（如果没有bc，使用awk）
+        GLIBC_MAJOR=$(echo $GLIBC_VERSION | cut -d. -f1)
+        GLIBC_MINOR=$(echo $GLIBC_VERSION | cut -d. -f2)
+        
+        if [ "$GLIBC_MAJOR" -lt 2 ] || ([ "$GLIBC_MAJOR" -eq 2 ] && [ "$GLIBC_MINOR" -lt 28 ]); then
+            echo -e "${YELLOW}检测到GLIBC版本较低（${GLIBC_VERSION}），使用兼容的Miniconda版本...${NC}"
+            # 使用兼容GLIBC 2.17的旧版本Miniconda (py39_4.9.2)
+            MINICONDA_URL="https://repo.anaconda.com/miniconda/Miniconda3-py39_4.9.2-Linux-x86_64.sh"
+        else
+            echo -e "${GREEN}GLIBC版本满足要求，使用最新版本Miniconda...${NC}"
+            MINICONDA_URL="https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh"
+        fi
+    else
+        # 如果无法检测GLIBC版本，默认使用旧版本（更安全）
+        echo -e "${YELLOW}无法检测GLIBC版本，使用兼容版本Miniconda...${NC}"
+        MINICONDA_URL="https://repo.anaconda.com/miniconda/Miniconda3-py39_4.9.2-Linux-x86_64.sh"
+    fi
+    
     # 下载并安装
     cd /tmp
-    wget -q $MINICONDA_URL -O miniconda.sh
-    bash miniconda.sh -b -p $HOME/miniconda3
+    echo -e "${GREEN}下载Miniconda: $MINICONDA_URL${NC}"
+    wget -q $MINICONDA_URL -O miniconda.sh || {
+        echo -e "${RED}下载失败，尝试备用URL...${NC}"
+        # 备用：使用py38版本（更老的兼容版本）
+        MINICONDA_URL="https://repo.anaconda.com/miniconda/Miniconda3-py38_4.9.2-Linux-x86_64.sh"
+        wget -q $MINICONDA_URL -O miniconda.sh || {
+            echo -e "${RED}Miniconda下载失败，请检查网络连接${NC}"
+            exit 1
+        }
+    }
+    
+    echo -e "${GREEN}安装Miniconda...${NC}"
+    bash miniconda.sh -b -p $HOME/miniconda3 || {
+        echo -e "${RED}Miniconda安装失败${NC}"
+        rm -f miniconda.sh
+        exit 1
+    }
     rm miniconda.sh
     
     # 初始化conda
-    $HOME/miniconda3/bin/conda init bash
+    $HOME/miniconda3/bin/conda init bash 2>/dev/null || true
     source $HOME/miniconda3/etc/profile.d/conda.sh
     
     echo -e "${GREEN}Miniconda安装完成！${NC}"
