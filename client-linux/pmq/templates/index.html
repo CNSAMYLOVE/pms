@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Polymarket 多账号群控系统</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>Polymarket 多账号群控系统</h1>
+        
+        <!-- 账号管理面板 -->
+        <div class="panel">
+            <div class="panel-header">
+                <h2>账户数据面板</h2>
+                <button class="btn btn-primary" onclick="showAddAccountModal()">添加账号</button>
+            </div>
+            <div class="panel-content">
+                <table id="accountsTable" class="data-table">
+                    <thead>
+                        <tr>
+                            <th><input type="checkbox" id="selectAllAccounts"></th>
+                            <th>序号</th>
+                            <th>账户名称</th>
+                            <th>账户地址</th>
+                            <th>代理IP</th>
+                            <th>账户现金(USDC)</th>
+                            <th>状态</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="accountsTableBody">
+                        <!-- 动态加载 -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <!-- 任务配置面板 -->
+        <div class="panel">
+            <div class="panel-header">
+                <h2>任务数据面板</h2>
+            </div>
+            <div class="panel-content">
+                <div class="task-config">
+                    <div class="config-item">
+                        <label>选择账号数目: <span id="selectedAccountsCount">0</span></label>
+                    </div>
+                    <div class="config-item">
+                        <label>订单执行金额(美金):</label>
+                        <input type="number" id="orderAmount" value="2.0" step="0.1" min="0.1">
+                    </div>
+                    <div class="config-item">
+                        <label>价格阈值(%):</label>
+                        <input type="number" id="priceThreshold" value="85" step="1" min="0" max="100">
+                    </div>
+                    <div class="config-item">
+                        <label>检查时间窗口(分钟):</label>
+                        <input type="number" id="timeWindow" value="2" step="1" min="1">
+                    </div>
+                    <div class="config-item">
+                        <label>监控间隔(秒):</label>
+                        <input type="number" id="monitorInterval" value="3" step="1" min="1">
+                    </div>
+                    <div class="config-item">
+                        <button class="btn btn-primary" onclick="updateStrategyConfig()">更新策略配置</button>
+                    </div>
+                    <div class="config-item" style="border-top: 1px solid #ddd; padding-top: 15px; margin-top: 15px;">
+                        <label><strong>手动下单（选择事件）:</strong></label>
+                        <input type="text" id="marketUrl" placeholder="输入市场URL或市场ID（留空使用默认15分钟预测）" style="width: 100%; padding: 8px; margin-top: 5px;">
+                        <div style="margin-top: 10px;">
+                            <label style="display: block; margin-bottom: 5px;">选择方向:</label>
+                            <div style="display: flex; gap: 10px;">
+                                <label style="cursor: pointer; padding: 8px 15px; border: 2px solid #28a745; border-radius: 4px; background: #f0f9f0;">
+                                    <input type="radio" name="orderSide" value="YES" checked style="margin-right: 5px;">
+                                    <span style="color: #28a745; font-weight: bold;">YES/UP (绿色)</span>
+                                </label>
+                                <label style="cursor: pointer; padding: 8px 15px; border: 2px solid #dc3545; border-radius: 4px; background: #fff5f5;">
+                                    <input type="radio" name="orderSide" value="NO" style="margin-right: 5px;">
+                                    <span style="color: #dc3545; font-weight: bold;">NO/DOWN (红色)</span>
+                                </label>
+                            </div>
+                        </div>
+                        <div style="margin-top: 10px;">
+                            <button class="btn btn-success" onclick="manualPlaceOrder()">手动一键下单</button>
+                            <button class="btn btn-secondary" style="margin-left:8px" onclick="clearMarketUrl()">清空</button>
+                        </div>
+                        <div id="manualOrderStatus" style="margin-top: 10px; font-size: 12px; color: #666;"></div>
+                    </div>
+                    <div class="config-item" style="border-top: 1px solid #ddd; padding-top: 15px; margin-top: 15px;">
+                        <button class="btn btn-success" onclick="startSelectedAccounts()">启动选中账号（实例）</button>
+                        <button class="btn btn-danger" style="margin-left:8px" onclick="stopSelectedAccounts()">停止选中账号</button>
+                        <button class="btn btn-warning" style="margin-left:8px" onclick="redeemAllAccounts()">一键索取全部账户</button>
+                        <button class="btn btn-info" style="margin-left:8px" onclick="sellAllAccounts()">一键Sell全部账户</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 运行状态面板 -->
+        <div class="panel">
+            <div class="panel-header">
+                <h2>运行状态</h2>
+            </div>
+            <div class="panel-content">
+                <div id="schedulerStatus" class="scheduler-status">
+                    <!-- 调度线程状态 -->
+                </div>
+                <div id="runningStatus">
+                    <!-- 动态加载运行状态 -->
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 添加账号模态框 -->
+    <div id="addAccountModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('addAccountModal')">&times;</span>
+            <h2>添加账号</h2>
+            <form id="addAccountForm">
+                <div class="form-group">
+                    <label>账号名称:</label>
+                    <input type="text" id="accountName" required>
+                </div>
+                <div class="form-group">
+                    <label>私钥:</label>
+                    <input type="text" id="privateKey" required placeholder="0x...">
+                </div>
+                <div class="form-group">
+                    <label>代理钱包地址:</label>
+                    <input type="text" id="proxyWallet" placeholder="0x...">
+                </div>
+                <div class="form-group">
+                    <label>Builder API Key:</label>
+                    <input type="text" id="builderApiKey" required>
+                </div>
+                <div class="form-group">
+                    <label>Builder API Secret:</label>
+                    <input type="text" id="builderApiSecret" required>
+                </div>
+                <div class="form-group">
+                    <label>Builder API Passphrase:</label>
+                    <input type="text" id="builderApiPassphrase" required>
+                </div>
+                <div class="form-group">
+                    <label>代理IP:</label>
+                    <input type="text" id="proxyIp" placeholder="http://ip:port 或 http://user:pass@ip:port">
+                </div>
+                <div class="form-group">
+                    <label>备注:</label>
+                    <textarea id="accountNotes" rows="3"></textarea>
+                </div>
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">添加</button>
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('addAccountModal')">取消</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- 编辑账号模态框 -->
+    <div id="editAccountModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('editAccountModal')">&times;</span>
+            <h2>编辑账号</h2>
+            <form id="editAccountForm">
+                <input type="hidden" id="editAccountId">
+                <div class="form-group">
+                    <label>账号名称:</label>
+                    <input type="text" id="editAccountName" required>
+                </div>
+                <div class="form-group">
+                    <label>私钥:</label>
+                    <input type="text" id="editPrivateKey" required placeholder="0x...">
+                </div>
+                <div class="form-group">
+                    <label>代理钱包地址:</label>
+                    <input type="text" id="editProxyWallet" placeholder="0x...">
+                </div>
+                <div class="form-group">
+                    <label>Builder API Key:</label>
+                    <input type="text" id="editBuilderApiKey" required>
+                </div>
+                <div class="form-group">
+                    <label>Builder API Secret:</label>
+                    <input type="text" id="editBuilderApiSecret" required>
+                </div>
+                <div class="form-group">
+                    <label>Builder API Passphrase:</label>
+                    <input type="text" id="editBuilderApiPassphrase" required>
+                </div>
+                <div class="form-group">
+                    <label>代理IP:</label>
+                    <input type="text" id="editProxyIp" placeholder="http://ip:port 或 http://user:pass@ip:port">
+                </div>
+                <div class="form-group">
+                    <label>备注:</label>
+                    <textarea id="editAccountNotes" rows="3"></textarea>
+                </div>
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">保存</button>
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('editAccountModal')">取消</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>
+

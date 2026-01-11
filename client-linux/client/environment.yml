@@ -1,0 +1,23 @@
+name: pms-client
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.11
+  - pip
+  # 基础网络和工具包
+  - requests>=2.25.0
+  - python-dateutil
+  # 通过 pip 安装的包（PMS 客户端所有必需依赖）
+  - pip:
+    # Web3 和区块链相关（必需）
+    - eth-account==0.13.7
+    - web3>=6.0.0
+    # Flask Web 框架（PMS 客户端必需）
+    - flask>=2.0.0
+    - flask-cors>=3.0.0
+    # Polymarket CLOB API 客户端（必需）
+    - py-clob-client>=0.1.0
+    # Builder API 客户端（必需，注意版本和 Python 要求）
+    - py-builder-relayer-client==0.0.1
+    - py-builder-signing-sdk==0.0.2
