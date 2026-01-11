@@ -11,19 +11,19 @@ import os
 current_dir = os.path.dirname(os.path.abspath(__file__))
 client_dir = os.path.join(current_dir, 'client')
 
-# 添加客户端目录到路径
+# 添加客户端目录到路径（command_executor.py会自己处理pmq路径）
 sys.path.insert(0, client_dir)
 sys.path.insert(0, current_dir)
-
-# 确保能找到 pmq 模块
-pmq_dir = os.path.join(current_dir, 'pmq')
-if os.path.exists(pmq_dir):
-    sys.path.insert(0, pmq_dir)
 
 # 导入并运行客户端
 if __name__ == '__main__':
     # 切换到客户端目录
     os.chdir(client_dir)
+    
+    # 确保client_dir在sys.path最前面（防止pmq/app.py被优先导入）
+    if client_dir in sys.path:
+        sys.path.remove(client_dir)
+    sys.path.insert(0, client_dir)
     
     # 导入客户端应用
     from app import app, CLIENT_HOST, CLIENT_PORT, CLIENT_DEBUG, init_client_config, auto_register_to_server
