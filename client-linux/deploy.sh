@@ -17,9 +17,9 @@ INSTALL_DIR="${1:-/opt/pms_client}"
 CLIENT_ID="${2:-client-1}"
 SERVER_URL="http://101.32.22.185:8000"
 CONDA_ENV_NAME="pms-client"
-# 强制指定兼容GLIBC 2.17的Miniconda版本（CentOS 7专用）
-MINICONDA_VERSION="Miniconda3-py38_4.9.2-Linux-x86_64.sh"
-MINICONDA_URL="https://repo.anaconda.com/miniconda/${MINICONDA_VERSION}"
+
+MINICONDA_URL="https://repo.anaconda.com/miniconda/Miniconda3-py311_23.10.0-1-Linux-x86_64.sh"
+MINICONDA_BACKUP_URL="https://mirrors.tuna.tsinghua.edu.cn/anaconda/miniconda/Miniconda3-py311_23.10.0-1-Linux-x86_64.sh"
 # 备用下载地址（防止官方源访问失败）
 MINICONDA_BACKUP_URL="https://mirrors.tuna.tsinghua.edu.cn/anaconda/miniconda/${MINICONDA_VERSION}"
 
