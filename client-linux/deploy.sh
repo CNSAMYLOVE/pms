@@ -34,7 +34,7 @@ if [ "$EUID" -eq 0 ]; then
 fi
 
 # 步骤1: 检查并安装Miniforge3
-echo -e "${GREEN}[步骤1/7] 检查Conda安装...${NC}"
+echo -e "${GREEN}[步骤1/6] 检查Conda安装...${NC}"
 if ! command -v conda &> /dev/null; then
     echo -e "${YELLOW}未检测到Conda，开始安装Miniforge3...${NC}"
     
@@ -81,7 +81,7 @@ fi
 echo ""
 
 # 步骤2: 创建安装目录
-echo -e "${GREEN}[步骤2/7] 创建安装目录...${NC}"
+echo -e "${GREEN}[步骤2/6] 创建安装目录...${NC}"
 sudo mkdir -p "$INSTALL_DIR"
 sudo chown -R $USER:$USER "$INSTALL_DIR"
 cd "$INSTALL_DIR"
@@ -89,7 +89,7 @@ echo -e "${GREEN}安装目录: $INSTALL_DIR${NC}"
 echo ""
 
 # 步骤3: 克隆或更新代码
-echo -e "${GREEN}[步骤3/7] 克隆/更新代码...${NC}"
+echo -e "${GREEN}[步骤3/6] 克隆/更新代码...${NC}"
 if [ -d "pm" ]; then
     echo -e "${YELLOW}检测到现有代码，更新中...${NC}"
     cd pm
@@ -115,7 +115,7 @@ echo -e "${GREEN}代码就绪（使用最新代码）${NC}"
 echo ""
 
 # 步骤4: 创建Conda环境
-echo -e "${GREEN}[步骤4/7] 创建Conda环境...${NC}"
+echo -e "${GREEN}[步骤4/6] 创建Conda环境...${NC}"
 PROJECT_DIR="$INSTALL_DIR/pm/client-linux"
 
 if conda env list | grep -q "^${CONDA_ENV_NAME} "; then
@@ -129,7 +129,7 @@ fi
 echo ""
 
 # 步骤5: 激活环境并安装依赖
-echo -e "${GREEN}[步骤5/7] 激活环境并安装依赖...${NC}"
+echo -e "${GREEN}[步骤5/6] 激活环境并安装依赖...${NC}"
 conda activate $CONDA_ENV_NAME
 
 # 验证Python版本
@@ -161,24 +161,8 @@ python -c "import flask; import web3; import requests; print('✓ 核心依赖�
 }
 echo ""
 
-# 步骤6: 配置防火墙
-echo -e "${GREEN}[步骤6/7] 配置防火墙...${NC}"
-if command -v firewall-cmd &> /dev/null; then
-    if sudo firewall-cmd --list-ports | grep -q "9000/tcp"; then
-        echo -e "${YELLOW}端口9000已开放${NC}"
-    else
-        echo -e "${GREEN}开放端口9000...${NC}"
-        sudo firewall-cmd --permanent --add-port=9000/tcp
-        sudo firewall-cmd --reload
-        echo -e "${GREEN}端口9000已开放${NC}"
-    fi
-else
-    echo -e "${YELLOW}未检测到firewalld，请手动开放端口9000${NC}"
-fi
-echo ""
-
-# 步骤7: 生成启动脚本
-echo -e "${GREEN}[步骤7/7] 生成启动脚本...${NC}"
+# 步骤6: 生成启动脚本
+echo -e "${GREEN}[步骤6/6] 生成启动脚本...${NC}"
 cat > "$INSTALL_DIR/start_client.sh" << EOF
 #!/bin/bash
 # PMS客户端启动脚本
